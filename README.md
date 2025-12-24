@@ -4,6 +4,45 @@
 
 Real-time event ticketing API with optimistic concurrency control, preventing over-selling in high-traffic scenarios.
 
+## 🌐 **Live Deployment**
+
+**Production API:** [`https://ticketboss-api-j3ocwoeisq-el.a.run.app`](https://ticketboss-api-j3ocwoeisq-el.a.run.app/health)
+
+**Platform:** Google Cloud Run (Containerized Deployment)
+
+---
+
+## 🧪 **Quick Test - Live API Endpoints**
+
+### **Health Check**
+```bash
+curl https://ticketboss-api-j3ocwoeisq-el.a.run.app/health
+```
+
+### **Get Event Summary**
+```bash
+curl https://ticketboss-api-j3ocwoeisq-el.a.run.app/reservations
+```
+
+### **Create Reservation**
+```bash
+curl -X POST https://ticketboss-api-j3ocwoeisq-el.a.run.app/reservations \
+  -H "Content-Type: application/json" \
+  -d '{"partnerId":"proctor-test","seats":5}'
+```
+
+### **List All Reservations**
+```bash
+curl https://ticketboss-api-j3ocwoeisq-el.a.run.app/reservations/list
+```
+
+### **Cancel Reservation** (use ID from above)
+```bash
+curl -X DELETE https://ticketboss-api-j3ocwoeisq-el.a.run.app/reservations/YOUR_RESERVATION_ID
+```
+
+---
+
 ## 🚀 Features
 
 - **Real-time Reservations**: Instant accept/deny responses (no queuing)
@@ -12,6 +51,7 @@ Real-time event ticketing API with optimistic concurrency control, preventing ov
 - **Type-Safe**: 100% TypeScript with strict mode (no `any` types)
 - **MongoDB Transactions**: ACID guarantees for data consistency
 - **RESTful API**: Clean, intuitive endpoint design
+- **Cloud Deployed**: Running on Google Cloud Run with auto-scaling
 
 ---
 
@@ -71,7 +111,12 @@ Server starts at: `http://localhost:3000`
 
 ## 📚 API Documentation
 
-### Base URL
+### Live Base URL
+```
+https://ticketboss-api-j3ocwoeisq-el.a.run.app
+```
+
+### Local Base URL
 ```
 http://localhost:3000
 ```
@@ -443,18 +488,139 @@ All errors return consistent JSON format:
 
 ---
 
+## 🚀 Deployment
+
+### **Current Deployment**
+
+**Platform:** Google Cloud Run  
+**URL:** https://ticketboss-api-j3ocwoeisq-el.a.run.app  
+**Status:** ✅ Live  
+**Region:** asia-south1 (Mumbai)  
+**Docker Image:** `docker.io/ayushdhanesha/ticketboss:1.0`
+
+### **Deployment Architecture**
+
+```
+GitHub → Docker Build → Docker Hub → Google Cloud Run
+                                           ↓
+                                    MongoDB Atlas
+```
+
+### **Tech Stack**
+- **Container:** Docker (Node.js 18 Alpine)
+- **Cloud Platform:** Google Cloud Run (Serverless)
+- **Database:** MongoDB Atlas (Cloud)
+- **CI/CD:** Manual deployment via Docker Hub
+
+### **How to Deploy Updates**
+
+1. **Build Docker Image:**
+```bash
+docker buildx build --platform linux/amd64 --provenance=false --sbom=false \
+  -t ayushdhanesha/ticketboss:1.1 --push .
+```
+
+2. **Deploy to Cloud Run:**
+```bash
+gcloud run deploy ticketboss-api \
+  --image docker.io/ayushdhanesha/ticketboss:1.1 \
+  --region asia-south1
+```
+
+3. **Test Deployment:**
+```bash
+curl https://ticketboss-api-j3ocwoeisq-el.a.run.app/health
+```
+
+### **Deployment Features**
+- ✅ Auto-scaling (0 to 10 instances)
+- ✅ HTTPS by default
+- ✅ Public access (no authentication required)
+- ✅ 512MB RAM, 1 vCPU per instance
+- ✅ Cold start optimized
+- ✅ Connection pooling for MongoDB
+
+---
+
+## 📋 For Proctors - Testing the Live API
+
+### **Quick Verification Commands**
+
+**Test Health:**
+```bash
+curl https://ticketboss-api-j3ocwoeisq-el.a.run.app/health
+```
+
+**Check Event Availability:**
+```bash
+curl https://ticketboss-api-j3ocwoeisq-el.a.run.app/reservations
+```
+
+**Create a Test Reservation:**
+```bash
+curl -X POST https://ticketboss-api-j3ocwoeisq-el.a.run.app/reservations \
+  -H "Content-Type: application/json" \
+  -d '{"partnerId":"proctor-test-001","seats":3}'
+```
+*Note: Copy the `reservationId` from response for cancellation test*
+
+**List All Reservations:**
+```bash
+curl https://ticketboss-api-j3ocwoeisq-el.a.run.app/reservations/list
+```
+
+**Cancel Reservation:**
+```bash
+curl -X DELETE https://ticketboss-api-j3ocwoeisq-el.a.run.app/reservations/YOUR_RESERVATION_ID
+```
+*Replace `YOUR_RESERVATION_ID` with actual ID from previous step*
+
+**Verify Cancellation:**
+```bash
+curl https://ticketboss-api-j3ocwoeisq-el.a.run.app/reservations
+```
+*Available seats should have increased*
+
+### **Test Optimistic Concurrency (Advanced)**
+
+Simulate multiple concurrent requests:
+```bash
+# Run these simultaneously in different terminals
+for i in {1..5}; do
+  curl -X POST https://ticketboss-api-j3ocwoeisq-el.a.run.app/reservations \
+    -H "Content-Type: application/json" \
+    -d "{\"partnerId\":\"concurrent-test-$i\",\"seats\":10}" &
+done
+wait
+```
+
+Check that no over-selling occurred:
+```bash
+curl https://ticketboss-api-j3ocwoeisq-el.a.run.app/reservations
+```
+
+### **Expected Behavior**
+- ✅ All endpoints respond within 200-500ms
+- ✅ Version conflicts return `409 Conflict`
+- ✅ Invalid requests return `400 Bad Request`
+- ✅ Cancellation returns `204 No Content`
+- ✅ Total reserved seats never exceed 500
+
+---
+
 ## 🚀 Deployment Checklist
 
-- [ ] Set `NODE_ENV=production`
-- [ ] Configure MongoDB Atlas connection string
-- [ ] Whitelist deployment server IP in Atlas
-- [ ] Enable authentication (JWT/API keys)
-- [ ] Set up rate limiting
-- [ ] Configure CORS
-- [ ] Enable HTTPS
-- [ ] Set up monitoring/logging
-- [ ] Configure backup strategy
-- [ ] Test graceful shutdown
+- [x] Set `NODE_ENV=production`
+- [x] Configure MongoDB Atlas connection string
+- [x] Whitelist deployment server IP in Atlas (0.0.0.0/0 for Cloud Run)
+- [x] Enable HTTPS (provided by Cloud Run)
+- [x] Deploy to cloud platform (Google Cloud Run)
+- [x] Test all endpoints on live deployment
+- [ ] Enable authentication (JWT/API keys) - Future enhancement
+- [ ] Set up rate limiting - Future enhancement
+- [ ] Configure CORS - Future enhancement
+- [ ] Set up monitoring/logging - Available in GCP Console
+- [ ] Configure backup strategy - MongoDB Atlas auto-backup
 
 ---
 
